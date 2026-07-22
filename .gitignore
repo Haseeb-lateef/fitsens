@@ -1,0 +1,30 @@
+# Private working docs
+CLAUDE.md
+FUTURE_FEATURES.md
+
+# Environments
+.env
+.env.local
+.env.development
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+
+#Designs
+design/
