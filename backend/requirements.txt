@@ -10,3 +10,4 @@ passlib[bcrypt]
 openai
 python-dotenv
 pytest
+httpx
