@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import auth
+from app.routes import auth, exercise
 
 app = FastAPI(title="fitsens API",version="1.0")
 
@@ -10,3 +10,4 @@ def health_check():
 
 
 app.include_router(auth.router)
+app.include_router(exercise.router)
