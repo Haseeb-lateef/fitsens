@@ -23,6 +23,19 @@ class FoodLogUpdate(BaseModel):
     meal_type: MealType | None = None
 
 
+class FoodLogParseRequest(BaseModel):
+    text: str
+
+
+class FoodLogParseResponse(BaseModel):
+    name: str | None = None
+    calories: int | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+    meal_type: MealType | None = None
+
+
 class FoodLogOut(BaseModel):
     id: int
     name: str
