@@ -1,8 +1,11 @@
 from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
+from openai import OpenAIError
 
 from app.main import app
+import app.routes.food_log as food_log_routes
+from app.schemas.food_log import FoodLogParseResponse
 
 client = TestClient(app)
 
@@ -86,3 +89,37 @@ def test_delete_food_log(auth_headers):
 
     get_response = client.get("/food-log", headers=auth_headers)
     assert get_response.json() == []
+
+
+def test_parse_food_log(auth_headers, monkeypatch):
+    fake_result = FoodLogParseResponse(
+        name="Chicken Rice",
+        calories=650,
+        protein_g=45,
+        carbs_g=70,
+        fat_g=15,
+        meal_type="lunch",
+    )
+    monkeypatch.setattr(food_log_routes, "parse_food_text", lambda text: fake_result)
+
+    response = client.post("/food-log/parse", headers=auth_headers, json={"text": "chicken and rice"})
+
+    assert response.status_code == 200
+    assert response.json() == fake_result.model_dump()
+
+
+def test_parse_food_log_requires_auth():
+    response = client.post("/food-log/parse", json={"text": "chicken and rice"})
+
+    assert response.status_code == 401
+
+
+def test_parse_food_log_ai_failure(auth_headers, monkeypatch):
+    def raise_error(text):
+        raise OpenAIError("boom")
+
+    monkeypatch.setattr(food_log_routes, "parse_food_text", raise_error)
+
+    response = client.post("/food-log/parse", headers=auth_headers, json={"text": "chicken and rice"})
+
+    assert response.status_code == 502
