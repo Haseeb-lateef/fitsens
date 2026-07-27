@@ -22,3 +22,9 @@ export interface LoginResponse {
   token_type: string;
   user_id: number;
 }
+
+export interface MeResponse {
+  id: number;
+  username: string;
+  email: string;
+}

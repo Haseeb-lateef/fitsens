@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 
 class RegisterData(BaseModel):
     username: str
@@ -20,5 +20,12 @@ class LoginResponse(BaseModel):
     access_token: str
     token_type: str
     user_id: int
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    email: str
+
+    model_config = ConfigDict(from_attributes=True)
 
     

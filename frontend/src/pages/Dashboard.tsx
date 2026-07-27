@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Flame, Drumstick, Dumbbell, Play, Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { getMe } from "../api/auth";
 import { getFoodLogsForDate } from "../api/foodLog";
 import { getGoals } from "../api/goal";
 import { getBodyweightLogs } from "../api/bodyweightLog";
@@ -32,6 +33,7 @@ function getGreeting(): string {
 }
 
 function Dashboard() {
+  const [username, setUsername] = useState("");
   const [goals, setGoals] = useState<GoalOut | null>(null);
   const [todayCalories, setTodayCalories] = useState(0);
   const [todayProtein, setTodayProtein] = useState(0);
@@ -45,12 +47,14 @@ function Dashboard() {
 
   useEffect(() => {
     Promise.all([
+      getMe(),
       getGoals(),
       getFoodLogsForDate(todayDate),
       getBodyweightLogs(),
       getDayPlan(today),
       getExercises(),
-    ]).then(([goalsData, foodLogs, weightLogs, planData, exercisesData]) => {
+    ]).then(([me, goalsData, foodLogs, weightLogs, planData, exercisesData]) => {
+      setUsername(me.username);
       setGoals(goalsData);
       setTodayCalories(foodLogs.reduce((sum, log) => sum + log.calories, 0));
       setTodayProtein(foodLogs.reduce((sum, log) => sum + log.protein_g, 0));
@@ -90,7 +94,9 @@ function Dashboard() {
     <div className="p-4 flex flex-col gap-4">
       <div className="flex justify-between items-center">
         <div>
-          <p className="text-neutral-400 text-sm">{getGreeting()}</p>
+          <p className="text-neutral-400 text-sm">
+            {getGreeting()}, <span className="text-brand-500 font-medium">{username}</span>
+          </p>
           <h1 className="text-xl font-semibold text-neutral-50">Dashboard</h1>
         </div>
         <Link to="/profile" className="text-neutral-400 text-sm">

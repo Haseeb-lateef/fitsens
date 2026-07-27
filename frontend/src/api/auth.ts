@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import type { RegisterRequest, RegisterResponse, LoginRequest, LoginResponse } from "../types/auth";
+import type { RegisterRequest, RegisterResponse, LoginRequest, LoginResponse, MeResponse } from "../types/auth";
 
 export function register(data: RegisterRequest): Promise<RegisterResponse> {
   return apiClient<RegisterResponse>("/register", {
@@ -13,4 +13,8 @@ export function login(data: LoginRequest): Promise<LoginResponse> {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export function getMe(): Promise<MeResponse> {
+  return apiClient<MeResponse>("/me");
 }
