@@ -1,25 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.deps import get_db, get_current_user
+from app.deps import get_db, get_current_user, get_owned_exercise_or_404
 from app.schemas import plan
-from app.models import PlannedExercise, Exercise, User
+from app.models import PlannedExercise, User
 
 router = APIRouter(tags=["Plan"], prefix="/plan")
 
 DAYS_OF_WEEK = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-
-
-def get_owned_exercise_or_404(exercise_id: int, db: Session, current_user: User) -> Exercise:
-    exercise = db.query(Exercise).filter(
-        (Exercise.id == exercise_id)
-        & (Exercise.user_id == current_user.id)
-        & (Exercise.deleted_at.is_(None))
-    ).first()
-
-    if not exercise:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exercise not found")
-
-    return exercise
 
 
 @router.get("", response_model=dict[str, list[plan.PlannedExerciseOut]])
