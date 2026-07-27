@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import type { ExerciseOut } from "../types/exercise";
 
 interface ExerciseCardProps {
@@ -12,8 +13,12 @@ function ExerciseCard({ exercise, onDelete }: ExerciseCardProps) {
         <p className="text-neutral-50">{exercise.name}</p>
         {exercise.muscle_group && <p className="text-neutral-400 text-sm">{exercise.muscle_group}</p>}
       </div>
-      <button onClick={() => onDelete(exercise.id)} className="text-red-500 text-sm">
-        Delete
+      <button
+        onClick={() => onDelete(exercise.id)}
+        aria-label={`Delete ${exercise.name}`}
+        className="text-neutral-400 hover:text-red-500 transition-colors"
+      >
+        <Trash2 size={18} />
       </button>
     </div>
   );

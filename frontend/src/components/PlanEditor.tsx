@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { getWeekPlan, createPlanEntry, deletePlanEntry } from "../api/plan";
 import { getExercises } from "../api/exercises";
 import type { WeekPlan, DayOfWeek } from "../types/plan";
@@ -23,10 +24,6 @@ function PlanEditor() {
 
   const dayEntries = weekPlan[selectedDay];
 
-  function exerciseName(exerciseId: number) {
-    return exercises.find((exercise) => exercise.id === exerciseId)?.name ?? "Unknown exercise";
-  }
-
   async function handleAdd() {
     if (selectedExerciseId === "") return;
 
@@ -46,13 +43,15 @@ function PlanEditor() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-2 overflow-x-auto">
+      <div className="flex gap-1 overflow-x-auto bg-neutral-900 rounded-full p-1">
         {DAYS.map((day) => (
           <button
             key={day}
             onClick={() => setSelectedDay(day)}
-            className={`px-3 py-1 rounded-full text-sm capitalize whitespace-nowrap ${
-              selectedDay === day ? "bg-brand-500 text-neutral-950 font-semibold" : "bg-neutral-900 text-neutral-400"
+            className={`px-3 py-1.5 rounded-full text-sm capitalize whitespace-nowrap transition-colors ${
+              selectedDay === day
+                ? "bg-brand-500 text-neutral-950 font-semibold"
+                : "text-neutral-400 hover:text-neutral-50"
             }`}
           >
             {day.slice(0, 3)}
@@ -64,7 +63,7 @@ function PlanEditor() {
         <select
           value={selectedExerciseId}
           onChange={(e) => setSelectedExerciseId(e.target.value === "" ? "" : Number(e.target.value))}
-          className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-neutral-50"
+          className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-neutral-50 focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           <option value="">Select exercise</option>
           {exercises.map((exercise) => (
@@ -80,14 +79,26 @@ function PlanEditor() {
 
       <div className="flex flex-col gap-2">
         {dayEntries.length === 0 && <p className="text-neutral-400 text-sm">No exercises planned for this day.</p>}
-        {dayEntries.map((entry) => (
-          <div key={entry.id} className="bg-neutral-900 rounded-2xl p-4 flex items-center justify-between">
-            <p className="text-neutral-50">{exerciseName(entry.exercise_id)}</p>
-            <button onClick={() => handleDelete(entry.id)} className="text-red-500 text-sm">
-              Delete
-            </button>
-          </div>
-        ))}
+        {dayEntries.map((entry) => {
+          const exercise = exercises.find((ex) => ex.id === entry.exercise_id);
+          return (
+            <div key={entry.id} className="bg-neutral-900 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-neutral-50">{exercise?.name ?? "Unknown exercise"}</p>
+                {exercise?.muscle_group && (
+                  <p className="text-neutral-400 text-sm">{exercise.muscle_group}</p>
+                )}
+              </div>
+              <button
+                onClick={() => handleDelete(entry.id)}
+                aria-label="Delete"
+                className="text-neutral-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
