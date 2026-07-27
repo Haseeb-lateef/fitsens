@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 from app.database import SessionLocal
-from app.models import User, Goal, Exercise, PlannedExercise, WorkoutSet, FoodLog
+from app.models import User, Goal, Exercise, PlannedExercise, WorkoutSet, FoodLog, BodyweightLog
 
 client = TestClient(app)
 
@@ -38,6 +38,7 @@ def auth_headers():
         db.query(PlannedExercise).filter(PlannedExercise.user_id == test_user.id).delete()
         db.query(WorkoutSet).filter(WorkoutSet.user_id == test_user.id).delete()
         db.query(FoodLog).filter(FoodLog.user_id == test_user.id).delete()
+        db.query(BodyweightLog).filter(BodyweightLog.user_id == test_user.id).delete()
         db.query(Exercise).filter(Exercise.user_id == test_user.id).delete()
         db.query(Goal).filter(Goal.user_id == test_user.id).delete()
         db.query(User).filter(User.id == test_user.id).delete()
