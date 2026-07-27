@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getFoodLogs, createFoodLog, deleteFoodLog } from "../api/foodLog";
+import { getFoodLogs, createFoodLog, deleteFoodLog, parseFoodLog } from "../api/foodLog";
 import type { FoodLogOut, MealType } from "../types/foodLog";
 import FoodLogCard from "../components/FoodLogCard";
 
@@ -15,12 +15,36 @@ function Nutrition() {
   const [fat, setFat] = useState("");
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [error, setError] = useState<string | null>(null);
+  const [parseText, setParseText] = useState("");
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   useEffect(() => {
     getFoodLogs()
       .then(setLogs)
       .finally(() => setIsLoading(false));
   }, []);
+
+  async function handleParse() {
+    if (parseText === "") return;
+    setParseError(null);
+    setIsParsing(true);
+
+    try {
+      const parsed = await parseFoodLog(parseText);
+      setName(parsed.name ?? "");
+      setCalories(parsed.calories?.toString() ?? "");
+      setProtein(parsed.protein_g?.toString() ?? "");
+      setCarbs(parsed.carbs_g?.toString() ?? "");
+      setFat(parsed.fat_g?.toString() ?? "");
+      setMealType(parsed.meal_type ?? "breakfast");
+      setParseText("");
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : "Failed to parse food description");
+    } finally {
+      setIsParsing(false);
+    }
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -59,6 +83,23 @@ function Nutrition() {
   return (
     <div className="p-4 flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-neutral-50">Nutrition</h1>
+
+      <div className="flex gap-2 bg-neutral-900 rounded-2xl p-4">
+        <input
+          value={parseText}
+          onChange={(e) => setParseText(e.target.value)}
+          placeholder="Describe what you ate..."
+          className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-2 text-neutral-50 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <button
+          onClick={handleParse}
+          disabled={isParsing}
+          className="bg-brand-500 text-neutral-950 font-semibold rounded-lg px-4 hover:bg-brand-600 disabled:opacity-50 transition-colors"
+        >
+          {isParsing ? "Parsing..." : "AI Parse"}
+        </button>
+      </div>
+      {parseError && <p className="text-red-400 text-sm">{parseError}</p>}
 
       <form onSubmit={handleAdd} className="flex flex-col gap-2 bg-neutral-900 rounded-2xl p-4">
         <input

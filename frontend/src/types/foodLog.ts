@@ -9,6 +9,15 @@ export interface FoodLogCreate {
   meal_type: MealType;
 }
 
+export interface FoodLogParseResponse {
+  name: string | null;
+  calories: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  meal_type: MealType | null;
+}
+
 export interface FoodLogOut {
   id: number;
   name: string;

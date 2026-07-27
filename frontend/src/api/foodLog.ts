@@ -1,8 +1,15 @@
 import { apiClient } from "./client";
-import type { FoodLogCreate, FoodLogOut } from "../types/foodLog";
+import type { FoodLogCreate, FoodLogOut, FoodLogParseResponse } from "../types/foodLog";
 
 export function getFoodLogs(): Promise<FoodLogOut[]> {
   return apiClient<FoodLogOut[]>("/food-log");
+}
+
+export function parseFoodLog(text: string): Promise<FoodLogParseResponse> {
+  return apiClient<FoodLogParseResponse>("/food-log/parse", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
 }
 
 export function createFoodLog(data: FoodLogCreate): Promise<FoodLogOut> {
