@@ -24,6 +24,12 @@ def test_register_success(db_cleanup):
     assert body["token_type"] == "bearer"
 
 
+def test_register_invalid_email():
+    response = client.post("/register", json={**TEST_USER, "email": "not-an-email"})
+
+    assert response.status_code == 422
+
+
 def test_register_duplicate(db_cleanup):
     client.post("/register", json=TEST_USER)
     response = client.post("/register", json=TEST_USER)
