@@ -1,8 +1,10 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
+from app.database import SessionLocal
 from app.main import app
+from app.models import User, WorkoutSet
 
 client = TestClient(app)
 
@@ -119,3 +121,39 @@ def test_delete_workout_set(auth_headers):
 
     get_response = client.get("/workout-sets", headers=auth_headers)
     assert get_response.json() == []
+
+
+def test_last_session_never_done(auth_headers):
+    exercise_id = create_test_exercise(auth_headers)
+
+    response = client.get(f"/exercises/{exercise_id}/last-session", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_last_session_exercise_not_owned(auth_headers):
+    response = client.get("/exercises/999999/last-session", headers=auth_headers)
+
+    assert response.status_code == 404
+
+
+def test_last_session_returns_only_most_recent_date(auth_headers):
+    exercise_id = create_test_exercise(auth_headers)
+
+    db = SessionLocal()
+    test_user = db.query(User).filter(User.email == "exercisetestuser@example.com").first()
+
+    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+    db.add(WorkoutSet(user_id=test_user.id, exercise_id=exercise_id, weight_kg=90, reps=8, performed_at=yesterday))
+    db.add(WorkoutSet(user_id=test_user.id, exercise_id=exercise_id, weight_kg=95, reps=6, performed_at=yesterday))
+    db.commit()
+    db.close()
+
+    client.post("/workout-sets", headers=auth_headers, json={"exercise_id": exercise_id, "weight_kg": 100, "reps": 5})
+
+    response = client.get(f"/exercises/{exercise_id}/last-session", headers=auth_headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body == [{"weight_kg": 100, "reps": 5}]
