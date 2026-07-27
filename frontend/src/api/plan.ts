@@ -5,6 +5,10 @@ export function getWeekPlan(): Promise<WeekPlan> {
   return apiClient<WeekPlan>("/plan");
 }
 
+export function getDayPlan(day: DayOfWeek): Promise<PlannedExerciseOut[]> {
+  return apiClient<PlannedExerciseOut[]>(`/plan/${day}`);
+}
+
 export function createPlanEntry(day: DayOfWeek, data: PlannedExerciseCreate): Promise<PlannedExerciseOut> {
   return apiClient<PlannedExerciseOut>(`/plan/${day}`, {
     method: "POST",
