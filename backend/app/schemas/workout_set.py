@@ -22,3 +22,11 @@ class WorkoutSetOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class LastSessionSet(BaseModel):
+    weight_kg: float
+    reps: int
+
+    class Config:
+        from_attributes = True

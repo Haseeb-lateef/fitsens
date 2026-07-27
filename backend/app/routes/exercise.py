@@ -2,9 +2,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.deps import get_db, get_current_user
-from app.schemas import exercise
-from app.models import Exercise, User
+from app.deps import get_db, get_current_user, get_owned_exercise_or_404
+from app.schemas import exercise, workout_set
+from app.models import Exercise, WorkoutSet, User
 
 router = APIRouter( tags=["Exercises"], prefix="/exercises")
 
@@ -56,6 +56,25 @@ def update(exercise_data: exercise.ExerciseUpdate,exercise_id: int, db: Session 
     db.refresh(existing_exercise)
 
     return existing_exercise
+
+
+@router.get("/{exercise_id}/last-session", response_model=list[workout_set.LastSessionSet])
+def get_last_session(exercise_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+
+    get_owned_exercise_or_404(exercise_id, db, current_user)
+
+    last_date = db.query(func.max(func.date(WorkoutSet.performed_at))).filter(
+        (WorkoutSet.exercise_id == exercise_id) & (WorkoutSet.user_id == current_user.id)
+    ).scalar()
+
+    if last_date is None:
+        return []
+
+    return db.query(WorkoutSet).filter(
+        (WorkoutSet.exercise_id == exercise_id)
+        & (WorkoutSet.user_id == current_user.id)
+        & (func.date(WorkoutSet.performed_at) == last_date)
+    ).order_by(WorkoutSet.performed_at).all()
 
 
 @router.delete("/{exercise_id}", status_code= status.HTTP_204_NO_CONTENT)
