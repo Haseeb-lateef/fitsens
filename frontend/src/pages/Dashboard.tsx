@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
-import { Flame, Beef, Dumbbell, Play } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Flame, Drumstick, Dumbbell, Play, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import { getFoodLogsForDate } from "../api/foodLog";
 import { getGoals } from "../api/goal";
 import { getBodyweightLogs } from "../api/bodyweightLog";
@@ -73,7 +73,15 @@ function Dashboard() {
     ),
   ];
 
-  const weightChartData = bodyweightLogs.map((log) => ({
+  const sortedWeights = [...bodyweightLogs].sort(
+    (a, b) => new Date(a.logged_at).getTime() - new Date(b.logged_at).getTime(),
+  );
+  const latestWeight = sortedWeights.at(-1)?.weight_kg ?? null;
+  const prevWeight = sortedWeights.at(-2)?.weight_kg ?? null;
+  const weightDelta =
+    latestWeight !== null && prevWeight !== null ? latestWeight - prevWeight : null;
+
+  const weightChartData = sortedWeights.map((log) => ({
     date: formatShortDate(log.logged_at),
     weight: log.weight_kg,
   }));
@@ -105,7 +113,7 @@ function Dashboard() {
           max={goals.protein_target_g ?? 0}
           unit="g"
           color="#a855f7"
-          icon={Beef}
+          icon={Drumstick}
         />
       </div>
 
@@ -123,15 +131,17 @@ function Dashboard() {
             {muscleGroups.length > 0 && (
               <p className="text-neutral-400 text-sm capitalize">{muscleGroups.join(" • ")}</p>
             )}
-            <p className="text-neutral-50 text-sm">
-              {todayPlan.length} Exercise{todayPlan.length > 1 ? "s" : ""}
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="bg-neutral-800 text-neutral-300 text-xs rounded-full px-2.5 py-1">
+                {todayPlan.length} Exercise{todayPlan.length > 1 ? "s" : ""}
+              </span>
+            </div>
           </>
         )}
 
         <Link
           to="/workouts"
-          className="bg-brand-500 text-neutral-950 font-semibold rounded-lg py-2 flex items-center justify-center gap-2 hover:bg-brand-600 transition-colors"
+          className="mt-1 bg-brand-500 text-neutral-950 font-semibold rounded-lg py-2.5 flex items-center justify-center gap-2 hover:bg-brand-600 transition-colors"
         >
           <Play size={16} />
           Start Workout
@@ -139,13 +149,65 @@ function Dashboard() {
       </div>
 
       {weightChartData.length > 1 && (
-        <div className="bg-neutral-900 rounded-2xl p-4">
-          <p className="text-neutral-50 font-semibold mb-2">Weight Progress</p>
+        <div className="bg-neutral-900 rounded-2xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-1.5 text-brand-500">
+            <Scale size={16} />
+            <span className="text-neutral-400 text-xs">Weight Progress</span>
+          </div>
+
+          <div className="flex items-end gap-3">
+            <span className="text-2xl font-bold text-neutral-50">{latestWeight} kg</span>
+            {weightDelta !== null && weightDelta !== 0 && (
+              <span
+                className={`flex items-center gap-1 text-sm mb-0.5 ${
+                  weightDelta < 0 ? "text-brand-500" : "text-red-400"
+                }`}
+              >
+                {weightDelta < 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                {Math.abs(weightDelta).toFixed(1)} kg
+              </span>
+            )}
+          </div>
+
           <div className="h-32">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={weightChartData}>
-                <Line type="monotone" dataKey="weight" stroke="#84cc16" strokeWidth={2} dot={false} />
-              </LineChart>
+              <AreaChart data={weightChartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#84cc16" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#84cc16" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "#a3a3a3", fontSize: 10 }}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={16}
+                />
+                <YAxis domain={["dataMin - 1", "dataMax + 1"]} hide />
+                <Tooltip
+                  contentStyle={{
+                    background: "#171717",
+                    border: "1px solid #262626",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "#a3a3a3" }}
+                  itemStyle={{ color: "#fafafa" }}
+                  formatter={(value) => [`${value} kg`, "Weight"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="weight"
+                  stroke="#84cc16"
+                  strokeWidth={2}
+                  fill="url(#weightFill)"
+                  dot={{ r: 3, fill: "#84cc16", strokeWidth: 0 }}
+                  activeDot={{ r: 4 }}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
