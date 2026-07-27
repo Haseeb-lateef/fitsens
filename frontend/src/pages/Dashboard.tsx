@@ -13,7 +13,9 @@ import type { BodyweightLogOut } from "../types/bodyweightLog";
 import type { PlannedExerciseOut, DayOfWeek } from "../types/plan";
 import type { ExerciseOut } from "../types/exercise";
 import StatRing from "../components/StatRing";
-import { formatShortDate } from "../utils/dates";
+import { ApiError } from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import { formatShortDate, toLocalDateString } from "../utils/dates";
 
 const DAYS_BY_JS_INDEX: DayOfWeek[] = [
   "sunday",
@@ -42,11 +44,19 @@ function Dashboard() {
   const [todayPlan, setTodayPlan] = useState<PlannedExerciseOut[]>([]);
   const [exercises, setExercises] = useState<ExerciseOut[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const { logout } = useAuth();
 
   const today = DAYS_BY_JS_INDEX[new Date().getDay()];
-  const todayDate = new Date().toISOString().slice(0, 10);
+  const todayDate = toLocalDateString();
 
   useEffect(() => {
+    let active = true;
+    setIsLoading(true);
+    setError(null);
+
     Promise.all([
       getMe(),
       getGoals(),
@@ -54,17 +64,34 @@ function Dashboard() {
       getBodyweightLogs(),
       getDayPlan(today),
       getExercises(),
-    ]).then(([me, goalsData, foodLogs, weightLogs, planData, exercisesData]) => {
-      setUsername(me.username);
-      setGoals(goalsData);
-      setTodayCalories(foodLogs.reduce((sum, log) => sum + log.calories, 0));
-      setTodayProtein(foodLogs.reduce((sum, log) => sum + log.protein_g, 0));
-      setBodyweightLogs(weightLogs);
-      setTodayPlan(planData);
-      setExercises(exercisesData);
-      setIsLoading(false);
-    });
-  }, [today, todayDate]);
+    ])
+      .then(([me, goalsData, foodLogs, weightLogs, planData, exercisesData]) => {
+        if (!active) return;
+        setUsername(me.username);
+        setGoals(goalsData);
+        setTodayCalories(foodLogs.reduce((sum, log) => sum + log.calories, 0));
+        setTodayProtein(foodLogs.reduce((sum, log) => sum + log.protein_g, 0));
+        setBodyweightLogs(weightLogs);
+        setTodayPlan(planData);
+        setExercises(exercisesData);
+        setIsLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        // An expired or invalid token can't be retried out of — drop it and let
+        // RequireAuth bounce back to login.
+        if (err instanceof ApiError && err.status === 401) {
+          logout();
+          return;
+        }
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+        setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [today, todayDate, reloadKey, logout]);
 
   useEffect(() => {
     if (!username) return;
@@ -77,6 +104,23 @@ function Dashboard() {
     }, 80);
     return () => clearInterval(interval);
   }, [username]);
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-3">
+          <p className="text-neutral-50 font-semibold">Couldn't load your dashboard</p>
+          <p className="text-neutral-400 text-sm">{error}</p>
+          <button
+            onClick={() => setReloadKey((key) => key + 1)}
+            className="self-start px-4 py-2 bg-brand-500 text-neutral-950 font-semibold rounded-lg hover:bg-brand-600 transition-colors"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading || !goals) {
     return <div className="p-4 text-neutral-400">Loading...</div>;
