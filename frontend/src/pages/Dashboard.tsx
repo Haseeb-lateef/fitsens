@@ -126,17 +126,53 @@ function Dashboard() {
         {todayPlan.length === 0 ? (
           <p className="text-neutral-400 text-sm">No exercises planned for today.</p>
         ) : (
-          <>
-            <h2 className="text-2xl font-bold text-neutral-50 capitalize">{today}</h2>
-            {muscleGroups.length > 0 && (
-              <p className="text-neutral-400 text-sm capitalize">{muscleGroups.join(" • ")}</p>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="bg-neutral-800 text-neutral-300 text-xs rounded-full px-2.5 py-1">
-                {todayPlan.length} Exercise{todayPlan.length > 1 ? "s" : ""}
-              </span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-2xl font-bold text-neutral-50 capitalize">{today}</h2>
+              {muscleGroups.length > 0 && (
+                <p className="text-neutral-400 text-sm capitalize">{muscleGroups.join(" • ")}</p>
+              )}
+              <div>
+                <span className="bg-neutral-800 text-neutral-300 text-xs rounded-full px-2.5 py-1">
+                  {todayPlan.length} Exercise{todayPlan.length > 1 ? "s" : ""}
+                </span>
+              </div>
             </div>
-          </>
+
+            <svg viewBox="0 0 120 120" className="w-24 h-24 shrink-0" aria-hidden="true">
+              <defs>
+                <linearGradient
+                  id="dbGrad"
+                  gradientUnits="userSpaceOnUse"
+                  x1="20"
+                  y1="40"
+                  x2="100"
+                  y2="80"
+                >
+                  <stop offset="0%" stopColor="#a3e635" />
+                  <stop offset="100%" stopColor="#65a30d" />
+                </linearGradient>
+                <radialGradient id="dbGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#84cc16" stopOpacity="0.25" />
+                  <stop offset="70%" stopColor="#84cc16" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <circle cx="60" cy="60" r="58" fill="url(#dbGlow)" />
+              <g
+                transform="rotate(-35 60 60)"
+                stroke="url(#dbGrad)"
+                strokeWidth="7"
+                strokeLinecap="round"
+                fill="none"
+              >
+                <line x1="38" y1="60" x2="82" y2="60" />
+                <line x1="30" y1="46" x2="30" y2="74" />
+                <line x1="22" y1="50" x2="22" y2="70" />
+                <line x1="90" y1="46" x2="90" y2="74" />
+                <line x1="98" y1="50" x2="98" y2="70" />
+              </g>
+            </svg>
+          </div>
         )}
 
         <Link
