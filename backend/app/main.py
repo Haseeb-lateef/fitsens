@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import auth, exercise, plan, workoutset
+from app.routes import auth, exercise, plan, workoutset, food_log
 
 app = FastAPI(title="fitsens API",version="1.0")
 
@@ -13,3 +13,4 @@ app.include_router(auth.router)
 app.include_router(exercise.router)
 app.include_router(plan.router)
 app.include_router(workoutset.router)
+app.include_router(food_log.router)
