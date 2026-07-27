@@ -34,6 +34,7 @@ function getGreeting(): string {
 
 function Dashboard() {
   const [username, setUsername] = useState("");
+  const [typedName, setTypedName] = useState("");
   const [goals, setGoals] = useState<GoalOut | null>(null);
   const [todayCalories, setTodayCalories] = useState(0);
   const [todayProtein, setTodayProtein] = useState(0);
@@ -65,6 +66,18 @@ function Dashboard() {
     });
   }, [today, todayDate]);
 
+  useEffect(() => {
+    if (!username) return;
+    setTypedName("");
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setTypedName(username.slice(0, i));
+      if (i >= username.length) clearInterval(interval);
+    }, 80);
+    return () => clearInterval(interval);
+  }, [username]);
+
   if (isLoading || !goals) {
     return <div className="p-4 text-neutral-400">Loading...</div>;
   }
@@ -91,13 +104,16 @@ function Dashboard() {
   }));
 
   return (
-    <div className="p-4 flex flex-col gap-4">
+    <div className="p-4 flex flex-col gap-6">
       <div className="flex justify-between items-center">
-        <div>
-          <p className="text-neutral-400 text-sm">
-            {getGreeting()}, <span className="text-brand-500 font-medium">{username}</span>
+        <div className="flex flex-col gap-2">
+          <p className="text-neutral-400 text-lg">
+            {getGreeting()}, <span className="text-brand-500 font-medium">{typedName}</span>
+            {typedName.length < username.length && (
+              <span className="text-brand-500 animate-pulse">|</span>
+            )}
           </p>
-          <h1 className="text-xl font-semibold text-neutral-50">Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-neutral-50">Dashboard</h1>
         </div>
         <Link to="/profile" className="text-neutral-400 text-sm">
           Profile
