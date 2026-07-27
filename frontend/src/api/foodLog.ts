@@ -5,6 +5,10 @@ export function getFoodLogs(): Promise<FoodLogOut[]> {
   return apiClient<FoodLogOut[]>("/food-log");
 }
 
+export function getFoodLogsForDate(date: string): Promise<FoodLogOut[]> {
+  return apiClient<FoodLogOut[]>(`/food-log?date=${date}`);
+}
+
 export function parseFoodLog(text: string): Promise<FoodLogParseResponse> {
   return apiClient<FoodLogParseResponse>("/food-log/parse", {
     method: "POST",
