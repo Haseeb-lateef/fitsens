@@ -2,11 +2,21 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from openai import OpenAIError
 from app.deps import get_db, get_current_user
 from app.schemas import food_log
 from app.models import FoodLog, User
+from app.services.ai_parser import parse_food_text
 
 router = APIRouter(tags=["Food Log"], prefix="/food-log")
+
+
+@router.post("/parse", response_model=food_log.FoodLogParseResponse)
+def parse_food_log(parse_data: food_log.FoodLogParseRequest, current_user: User = Depends(get_current_user)):
+    try:
+        return parse_food_text(parse_data.text)
+    except OpenAIError:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="AI parsing service unavailable")
 
 
 @router.post("", response_model=food_log.FoodLogOut, status_code=status.HTTP_201_CREATED)
