@@ -1,0 +1,5 @@
+# Local env files must never be uploaded to the Vercel build.
+# Production config comes from Vercel project env vars instead.
+.env
+.env.*
+!.env.example
