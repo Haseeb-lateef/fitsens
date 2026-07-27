@@ -28,3 +28,6 @@ Thumbs.db
 
 #Designs
 design/
+
+# Local-only scripts (not part of the shipped app)
+backend/scripts/
