@@ -4,6 +4,7 @@ import { getWeekPlan, createPlanEntry, updatePlanEntry, deletePlanEntry } from "
 import { getExercises, createExercise } from "../api/exercises";
 import type { WeekPlan, DayOfWeek, PlannedExerciseOut } from "../types/plan";
 import type { ExerciseOut } from "../types/exercise";
+import { currentWeekDates } from "../utils/dates";
 
 const DAYS: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
@@ -55,6 +56,9 @@ function PlanEditor() {
   }
 
   const dayEntries = weekPlan[selectedDay];
+  const weekDates = currentWeekDates();
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
   function resetAddForm() {
     setSelectedExerciseId("");
@@ -154,9 +158,10 @@ function PlanEditor() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-1">
-        {DAYS.map((day) => {
-          const count = weekPlan[day].length;
+        {DAYS.map((day, i) => {
+          const date = weekDates[i];
           const isSelected = selectedDay === day;
+          const isToday = date.getTime() === todayStart;
 
           return (
             <button
@@ -166,7 +171,7 @@ function PlanEditor() {
                 setEditingId(null);
                 setRowError(null);
               }}
-              aria-label={`${day}, ${count} ${count === 1 ? "exercise" : "exercises"}`}
+              aria-label={`${day} ${date.getDate()}${isToday ? " (today)" : ""}`}
               aria-current={isSelected ? "true" : undefined}
               className={`flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 transition-colors ${
                 isSelected ? "bg-brand-500" : "hover:bg-neutral-900"
@@ -181,10 +186,10 @@ function PlanEditor() {
               </span>
               <span
                 className={`text-lg font-bold leading-none ${
-                  isSelected ? "text-neutral-950" : count > 0 ? "text-neutral-50" : "text-neutral-600"
+                  isSelected ? "text-neutral-950" : isToday ? "text-brand-500" : "text-neutral-50"
                 }`}
               >
-                {count}
+                {date.getDate()}
               </span>
             </button>
           );
