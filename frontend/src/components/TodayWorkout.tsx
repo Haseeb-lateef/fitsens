@@ -18,10 +18,29 @@ const DAYS_BY_JS_INDEX: DayOfWeek[] = [
   "saturday",
 ];
 
+// Fallback for plan entries created before targets existed.
 const DEFAULT_SETS = 3;
-// The suggested count comes from your last session, so one unusually long
-// session would otherwise become the target for every session after it.
-const MAX_SUGGESTED_SETS = 6;
+
+// Reps come from the plan target (a goal you set); weight comes from your last
+// session (a number you beat). Sets already logged today win over both, so
+// continuing a session repeats what you just did rather than resetting.
+function prefillFor(
+  entry: PlannedExerciseOut,
+  todaySets: WorkoutSetOut[] | undefined,
+  history: LastSessionSet[] | undefined,
+) {
+  if (todaySets && todaySets.length > 0) {
+    const last = todaySets[todaySets.length - 1];
+    return { weight: String(last.weight_kg), reps: String(last.reps) };
+  }
+
+  const historyReps = history && history.length > 0 ? String(history[0].reps) : "";
+
+  return {
+    weight: history && history.length > 0 ? String(history[0].weight_kg) : "",
+    reps: entry.target_reps != null ? String(entry.target_reps) : historyReps,
+  };
+}
 
 function TodayWorkout() {
   const today = DAYS_BY_JS_INDEX[new Date().getDay()];
@@ -56,11 +75,10 @@ function TodayWorkout() {
       setCurrentIndex(0);
 
       if (planData.length > 0) {
-        const firstHistory = sessionMap[planData[0].exercise_id];
-        if (firstHistory && firstHistory.length > 0) {
-          setWeight(String(firstHistory[0].weight_kg));
-          setReps(String(firstHistory[0].reps));
-        }
+        const first = planData[0];
+        const prefill = prefillFor(first, undefined, sessionMap[first.exercise_id]);
+        setWeight(prefill.weight);
+        setReps(prefill.reps);
       }
     });
 
@@ -73,9 +91,10 @@ function TodayWorkout() {
     return exercises.find((exercise) => exercise.id === exerciseId);
   }
 
-  function suggestedFor(exerciseId: number) {
-    const count = lastSessions[exerciseId]?.length;
-    return count ? Math.min(count, MAX_SUGGESTED_SETS) : DEFAULT_SETS;
+  // The target is set on the plan entry, not derived from history, so the same
+  // exercise can be programmed differently on different days.
+  function suggestedFor(entry: PlannedExerciseOut) {
+    return entry.target_sets ?? DEFAULT_SETS;
   }
 
   function loggedCountFor(exerciseId: number) {
@@ -84,7 +103,7 @@ function TodayWorkout() {
 
   function isComplete(entry: PlannedExerciseOut, logged = loggedSets, done = doneManually) {
     const count = logged[entry.exercise_id]?.length ?? 0;
-    return count >= suggestedFor(entry.exercise_id) || done.includes(entry.id);
+    return count >= suggestedFor(entry) || done.includes(entry.id);
   }
 
   function nextIncompleteIndex(logged: Record<number, WorkoutSetOut[]>, done: number[]) {
@@ -100,24 +119,10 @@ function TodayWorkout() {
     if (!plan) return;
     setCurrentIndex(idx);
 
-    const exerciseId = plan[idx].exercise_id;
-    const todaySets = logged[exerciseId];
-
-    if (todaySets && todaySets.length > 0) {
-      const last = todaySets[todaySets.length - 1];
-      setWeight(String(last.weight_kg));
-      setReps(String(last.reps));
-      return;
-    }
-
-    const history = lastSessions[exerciseId];
-    if (history && history.length > 0) {
-      setWeight(String(history[0].weight_kg));
-      setReps(String(history[0].reps));
-    } else {
-      setWeight("");
-      setReps("");
-    }
+    const entry = plan[idx];
+    const prefill = prefillFor(entry, logged[entry.exercise_id], lastSessions[entry.exercise_id]);
+    setWeight(prefill.weight);
+    setReps(prefill.reps);
   }
 
   async function handleLog() {
@@ -148,7 +153,7 @@ function TodayWorkout() {
       setReps(String(repsValue));
 
       const newCount = (loggedSets[exerciseId]?.length ?? 0) + 1;
-      if (newCount >= suggestedFor(exerciseId)) {
+      if (newCount >= suggestedFor(plan[currentIndex])) {
         const idx = nextIncompleteIndex(nextLogged, doneManually);
         if (idx !== -1) goToExercise(idx, nextLogged);
       }
@@ -230,7 +235,7 @@ function TodayWorkout() {
 
       <WorkoutHero
         name={currentExercise?.name ?? "Unknown exercise"}
-        suggested={suggestedFor(current.exercise_id)}
+        suggested={suggestedFor(current)}
         loggedCount={loggedCountFor(current.exercise_id)}
         lastSession={lastSessions[current.exercise_id] ?? []}
         weight={weight}
@@ -254,7 +259,7 @@ function TodayWorkout() {
               key={entry.id}
               name={exercise?.name ?? "Unknown exercise"}
               loggedCount={loggedCountFor(entry.exercise_id)}
-              suggested={suggestedFor(entry.exercise_id)}
+              suggested={suggestedFor(entry)}
               isCurrent={idx === currentIndex}
               isComplete={isComplete(entry)}
               onClick={() => goToExercise(idx)}
