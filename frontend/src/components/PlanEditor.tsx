@@ -153,24 +153,42 @@ function PlanEditor() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex gap-1 overflow-x-auto bg-neutral-900 rounded-full p-1">
-        {DAYS.map((day) => (
-          <button
-            key={day}
-            onClick={() => {
-              setSelectedDay(day);
-              setEditingId(null);
-              setRowError(null);
-            }}
-            className={`px-3 py-1.5 rounded-full text-sm capitalize whitespace-nowrap transition-colors ${
-              selectedDay === day
-                ? "bg-brand-500 text-neutral-950 font-semibold"
-                : "text-neutral-400 hover:text-neutral-50"
-            }`}
-          >
-            {day.slice(0, 3)}
-          </button>
-        ))}
+      <div className="flex gap-1">
+        {DAYS.map((day) => {
+          const count = weekPlan[day].length;
+          const isSelected = selectedDay === day;
+
+          return (
+            <button
+              key={day}
+              onClick={() => {
+                setSelectedDay(day);
+                setEditingId(null);
+                setRowError(null);
+              }}
+              aria-label={`${day}, ${count} ${count === 1 ? "exercise" : "exercises"}`}
+              aria-current={isSelected ? "true" : undefined}
+              className={`flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2 transition-colors ${
+                isSelected ? "bg-brand-500" : "hover:bg-neutral-900"
+              }`}
+            >
+              <span
+                className={`text-xs font-medium capitalize ${
+                  isSelected ? "text-neutral-950" : "text-neutral-400"
+                }`}
+              >
+                {day.slice(0, 3)}
+              </span>
+              <span
+                className={`text-lg font-bold leading-none ${
+                  isSelected ? "text-neutral-950" : count > 0 ? "text-neutral-50" : "text-neutral-600"
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="bg-neutral-900 rounded-2xl p-4 flex flex-col gap-3">
