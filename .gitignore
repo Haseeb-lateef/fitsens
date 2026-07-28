@@ -1,6 +1,7 @@
 # Private working docs
 CLAUDE.md
 FUTURE_FEATURES.md
+DEBUG_LOG.md
 
 # Environments
 .env
