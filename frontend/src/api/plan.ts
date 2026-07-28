@@ -1,5 +1,11 @@
 import { apiClient } from "./client";
-import type { DayOfWeek, PlannedExerciseCreate, PlannedExerciseOut, WeekPlan } from "../types/plan";
+import type {
+  DayOfWeek,
+  PlannedExerciseCreate,
+  PlannedExerciseOut,
+  PlannedExerciseUpdate,
+  WeekPlan,
+} from "../types/plan";
 
 export function getWeekPlan(): Promise<WeekPlan> {
   return apiClient<WeekPlan>("/plan");
@@ -12,6 +18,13 @@ export function getDayPlan(day: DayOfWeek): Promise<PlannedExerciseOut[]> {
 export function createPlanEntry(day: DayOfWeek, data: PlannedExerciseCreate): Promise<PlannedExerciseOut> {
   return apiClient<PlannedExerciseOut>(`/plan/${day}`, {
     method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updatePlanEntry(id: number, data: PlannedExerciseUpdate): Promise<PlannedExerciseOut> {
+  return apiClient<PlannedExerciseOut>(`/plan/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(data),
   });
 }
