@@ -54,38 +54,54 @@ function TodayWorkout() {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
   const [isLogging, setIsLogging] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const loggingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
+    setPlan(null);
+    setLoadError(null);
 
-    getDayPlan(today).then(async (planData) => {
-      const exData = await getExercises();
-      const sessions = await Promise.all(planData.map((entry) => getLastSession(entry.exercise_id)));
-      if (!active) return;
+    (async () => {
+      try {
+        // The plan and the exercise catalog don't depend on each other, so fetch
+        // them together. Only the last-session calls need the plan first, which
+        // keeps this to two round trips instead of three — it's the difference
+        // between usable and not on a phone.
+        const [planData, exData] = await Promise.all([getDayPlan(today), getExercises()]);
+        const sessions = await Promise.all(
+          planData.map((entry) => getLastSession(entry.exercise_id)),
+        );
+        if (!active) return;
 
-      const sessionMap: Record<number, LastSessionSet[]> = {};
-      planData.forEach((entry, i) => {
-        sessionMap[entry.exercise_id] = sessions[i];
-      });
+        const sessionMap: Record<number, LastSessionSet[]> = {};
+        planData.forEach((entry, i) => {
+          sessionMap[entry.exercise_id] = sessions[i];
+        });
 
-      setExercises(exData);
-      setLastSessions(sessionMap);
-      setPlan(planData);
-      setCurrentIndex(0);
+        setExercises(exData);
+        setLastSessions(sessionMap);
+        setPlan(planData);
+        setCurrentIndex(0);
 
-      if (planData.length > 0) {
-        const first = planData[0];
-        const prefill = prefillFor(first, undefined, sessionMap[first.exercise_id]);
-        setWeight(prefill.weight);
-        setReps(prefill.reps);
+        if (planData.length > 0) {
+          const first = planData[0];
+          const prefill = prefillFor(first, undefined, sessionMap[first.exercise_id]);
+          setWeight(prefill.weight);
+          setReps(prefill.reps);
+        }
+      } catch (err: unknown) {
+        if (!active) return;
+        // Without this the screen sat on "Loading..." forever on any failure.
+        setLoadError(err instanceof Error ? err.message : "Couldn't load today's workout.");
       }
-    });
+    })();
 
     return () => {
       active = false;
     };
-  }, [today]);
+  }, [today, reloadKey]);
 
   function exerciseFor(exerciseId: number) {
     return exercises.find((exercise) => exercise.id === exerciseId);
@@ -205,6 +221,21 @@ function TodayWorkout() {
 
     const idx = nextIncompleteIndex(loggedSets, nextDone);
     if (idx !== -1) goToExercise(idx, loggedSets);
+  }
+
+  if (loadError) {
+    return (
+      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-3">
+        <p className="text-neutral-50 font-semibold">Couldn't load today's workout</p>
+        <p className="text-neutral-400 text-sm">{loadError}</p>
+        <button
+          onClick={() => setReloadKey((key) => key + 1)}
+          className="self-start px-4 py-2 bg-brand-500 text-neutral-950 font-semibold rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          Try again
+        </button>
+      </div>
+    );
   }
 
   if (!plan) {
