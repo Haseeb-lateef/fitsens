@@ -81,7 +81,7 @@ function Progress() {
       </form>
 
       {chartData.length > 1 && (
-        <div className="bg-neutral-900 rounded-2xl p-4 h-64">
+        <div className="bg-neutral-900 rounded-2xl p-4 h-64 touch-pan-y">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid stroke="#404040" strokeDasharray="3 3" />
@@ -120,7 +120,7 @@ function Progress() {
         </select>
 
         {progressionChartData.length > 1 && (
-          <div className="h-64">
+          <div className="h-64 touch-pan-y">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={progressionChartData}>
                 <CartesianGrid stroke="#404040" strokeDasharray="3 3" />

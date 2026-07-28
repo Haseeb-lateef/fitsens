@@ -284,6 +284,9 @@ function Dashboard() {
               )}
             </div>
 
+            {/* touch-pan-y leaves vertical scrolling to the browser but hands
+                horizontal drags to the chart, so the tooltip can follow a finger
+                along the line instead of the page scrolling away. */}
             {weightChartData.length < 2 ? (
               <Link
                 to="/progress"
@@ -292,7 +295,7 @@ function Dashboard() {
                 Log again to see your trend →
               </Link>
             ) : (
-              <div className="h-32">
+              <div className="h-32 touch-pan-y">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weightChartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                     <defs>
