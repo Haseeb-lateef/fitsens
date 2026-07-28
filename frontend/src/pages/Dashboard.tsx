@@ -250,70 +250,93 @@ function Dashboard() {
         </Link>
       </div>
 
-      {weightChartData.length > 1 && (
-        <div className="bg-neutral-900 rounded-2xl p-4 flex flex-col gap-3">
-          <div className="flex items-center gap-1.5 text-brand-500">
-            <Scale size={16} />
-            <span className="text-neutral-400 text-xs">Weight Progress</span>
-          </div>
-
-          <div className="flex items-end gap-3">
-            <span className="text-2xl font-bold text-neutral-50">{latestWeight} kg</span>
-            {weightDelta !== null && weightDelta !== 0 && (
-              <span
-                className={`flex items-center gap-1 text-sm mb-0.5 ${
-                  weightDelta < 0 ? "text-brand-500" : "text-red-400"
-                }`}
-              >
-                {weightDelta < 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-                {Math.abs(weightDelta).toFixed(1)} kg
-              </span>
-            )}
-          </div>
-
-          <div className="h-32">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weightChartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#84cc16" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#84cc16" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: "#a3a3a3", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={16}
-                />
-                <YAxis domain={["dataMin - 1", "dataMax + 1"]} hide />
-                <Tooltip
-                  contentStyle={{
-                    background: "#171717",
-                    border: "1px solid #262626",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "#a3a3a3" }}
-                  itemStyle={{ color: "#fafafa" }}
-                  formatter={(value) => [`${value} kg`, "Weight"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="weight"
-                  stroke="#84cc16"
-                  strokeWidth={2}
-                  fill="url(#weightFill)"
-                  dot={{ r: 3, fill: "#84cc16", strokeWidth: 0 }}
-                  activeDot={{ r: 4 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+      <div className="bg-neutral-900 rounded-2xl p-4 flex flex-col gap-3">
+        <div className="flex items-center gap-1.5 text-brand-500">
+          <Scale size={16} />
+          <span className="text-neutral-400 text-xs">Weight Progress</span>
         </div>
-      )}
+
+        {latestWeight === null ? (
+          // Nothing logged yet — the card still shows, so the feature is
+          // discoverable and points at where to log.
+          <>
+            <p className="text-neutral-400 text-sm">No weight logged yet.</p>
+            <Link
+              to="/progress"
+              className="self-start text-brand-500 text-sm hover:text-brand-600 transition-colors"
+            >
+              Log your weight →
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="flex items-end gap-3">
+              <span className="text-2xl font-bold text-neutral-50">{latestWeight} kg</span>
+              {weightDelta !== null && weightDelta !== 0 && (
+                <span
+                  className={`flex items-center gap-1 text-sm mb-0.5 ${
+                    weightDelta < 0 ? "text-brand-500" : "text-red-400"
+                  }`}
+                >
+                  {weightDelta < 0 ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                  {Math.abs(weightDelta).toFixed(1)} kg
+                </span>
+              )}
+            </div>
+
+            {weightChartData.length < 2 ? (
+              <Link
+                to="/progress"
+                className="self-start text-brand-500 text-sm hover:text-brand-600 transition-colors"
+              >
+                Log again to see your trend →
+              </Link>
+            ) : (
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weightChartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#84cc16" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#84cc16" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fill: "#a3a3a3", fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      minTickGap={16}
+                    />
+                    <YAxis domain={["dataMin - 1", "dataMax + 1"]} hide />
+                    <Tooltip
+                      contentStyle={{
+                        background: "#171717",
+                        border: "1px solid #262626",
+                        borderRadius: 8,
+                        fontSize: 12,
+                      }}
+                      labelStyle={{ color: "#a3a3a3" }}
+                      itemStyle={{ color: "#fafafa" }}
+                      formatter={(value) => [`${value} kg`, "Weight"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="weight"
+                      stroke="#84cc16"
+                      strokeWidth={2}
+                      fill="url(#weightFill)"
+                      dot={{ r: 3, fill: "#84cc16", strokeWidth: 0 }}
+                      activeDot={{ r: 4 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
