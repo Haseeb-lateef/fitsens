@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.deps import get_db, get_current_user, get_owned_exercise_or_404
 from app.schemas import exercise, workout_set
-from app.models import Exercise, WorkoutSet, User
+from app.models import Exercise, PlannedExercise, WorkoutSet, User
 
 router = APIRouter( tags=["Exercises"], prefix="/exercises")
 
@@ -89,6 +89,15 @@ def delete_exercise(exercise_id: int, db: Session = Depends(get_db), current_use
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail="Exercise not found")
 
     existing_exercise.deleted_at = datetime.now(timezone.utc)
+
+    # The exercise row is kept so workout_sets history still resolves a name, but
+    # planned_exercises is a forward-looking schedule rather than history. Leaving
+    # those rows behind pointed the active workout screen at an exercise that
+    # /last-session then refused to return, breaking the whole day.
+    db.query(PlannedExercise).filter(
+        (PlannedExercise.exercise_id == exercise_id)
+        & (PlannedExercise.user_id == current_user.id)
+    ).delete()
 
     db.commit()
     db.refresh(existing_exercise)

@@ -70,23 +70,34 @@ function TodayWorkout() {
         // keeps this to two round trips instead of three — it's the difference
         // between usable and not on a phone.
         const [planData, exData] = await Promise.all([getDayPlan(today), getExercises()]);
+
+        // An exercise deleted while still on the plan leaves a dangling entry, and
+        // /last-session 404s for it. Drop those from today rather than showing a
+        // phantom exercise — the plan editor still lists it so it can be removed.
+        const liveIds = new Set(exData.map((exercise) => exercise.id));
+        const dayPlan = planData.filter((entry) => liveIds.has(entry.exercise_id));
+
+        // Per-call catch: one exercise's missing history must not take down the
+        // whole screen, which is what Promise.all's all-or-nothing behaviour did.
         const sessions = await Promise.all(
-          planData.map((entry) => getLastSession(entry.exercise_id)),
+          dayPlan.map((entry) =>
+            getLastSession(entry.exercise_id).catch(() => [] as LastSessionSet[]),
+          ),
         );
         if (!active) return;
 
         const sessionMap: Record<number, LastSessionSet[]> = {};
-        planData.forEach((entry, i) => {
+        dayPlan.forEach((entry, i) => {
           sessionMap[entry.exercise_id] = sessions[i];
         });
 
         setExercises(exData);
         setLastSessions(sessionMap);
-        setPlan(planData);
+        setPlan(dayPlan);
         setCurrentIndex(0);
 
-        if (planData.length > 0) {
-          const first = planData[0];
+        if (dayPlan.length > 0) {
+          const first = dayPlan[0];
           const prefill = prefillFor(first, undefined, sessionMap[first.exercise_id]);
           setWeight(prefill.weight);
           setReps(prefill.reps);
