@@ -19,6 +19,9 @@ const DAYS_BY_JS_INDEX: DayOfWeek[] = [
 ];
 
 const DEFAULT_SETS = 3;
+// The suggested count comes from your last session, so one unusually long
+// session would otherwise become the target for every session after it.
+const MAX_SUGGESTED_SETS = 6;
 
 function TodayWorkout() {
   const today = DAYS_BY_JS_INDEX[new Date().getDay()];
@@ -71,7 +74,8 @@ function TodayWorkout() {
   }
 
   function suggestedFor(exerciseId: number) {
-    return lastSessions[exerciseId]?.length || DEFAULT_SETS;
+    const count = lastSessions[exerciseId]?.length;
+    return count ? Math.min(count, MAX_SUGGESTED_SETS) : DEFAULT_SETS;
   }
 
   function loggedCountFor(exerciseId: number) {
