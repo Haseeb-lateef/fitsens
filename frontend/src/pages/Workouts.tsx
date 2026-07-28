@@ -22,7 +22,7 @@ function Workouts() {
         <h1 className="text-xl font-semibold text-neutral-50">Workouts</h1>
       </div>
 
-      <div className="inline-flex self-start gap-1 bg-neutral-900 rounded-full p-1">
+      <div className="inline-flex self-center gap-1 bg-neutral-900 rounded-full p-1">
         {SECTIONS.map(({ key, label }) => (
           <button
             key={key}
