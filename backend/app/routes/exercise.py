@@ -27,7 +27,10 @@ def create_exercise(exercise_data: exercise.ExerciseCreate, db: Session= Depends
     ).first()
 
     if existing_exercise:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Exercise already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"You already have an exercise called {existing_exercise.name}",
+        )
 
     new_exercise = Exercise(**exercise_data.model_dump(), user_id= current_user.id)
     

@@ -45,6 +45,8 @@ def create_plan_entry(day_of_week: plan.DayOfWeek, entry_data: plan.PlannedExerc
         day_of_week=day_of_week,
         exercise_id=entry_data.exercise_id,
         display_order=entry_data.display_order,
+        target_sets=entry_data.target_sets,
+        target_reps=entry_data.target_reps,
     )
 
     db.add(new_entry)
