@@ -9,9 +9,12 @@ interface WorkoutHeroProps {
   weight: string;
   reps: string;
   isLogging: boolean;
+  canGoPrevious: boolean;
   onWeightChange: (value: string) => void;
   onRepsChange: (value: string) => void;
   onLog: () => void;
+  onUndoLastSet: () => void;
+  onPrevious: () => void;
   onNext: () => void;
 }
 
@@ -23,9 +26,12 @@ function WorkoutHero({
   weight,
   reps,
   isLogging,
+  canGoPrevious,
   onWeightChange,
   onRepsChange,
   onLog,
+  onUndoLastSet,
+  onPrevious,
   onNext,
 }: WorkoutHeroProps) {
   const currentSetNumber = loggedCount + 1;
@@ -90,12 +96,33 @@ function WorkoutHero({
         </button>
       </div>
 
-      <button
-        onClick={onNext}
-        className="self-end text-neutral-400 text-sm hover:text-neutral-50 transition-colors"
-      >
-        Next exercise →
-      </button>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={onPrevious}
+          disabled={!canGoPrevious}
+          className="text-neutral-400 text-sm hover:text-neutral-50 transition-colors disabled:opacity-30 disabled:hover:text-neutral-400"
+        >
+          ← Previous
+        </button>
+
+        <div className="flex items-center gap-4">
+          {loggedCount > 0 && (
+            <button
+              onClick={onUndoLastSet}
+              disabled={isLogging}
+              className="text-neutral-400 text-sm hover:text-red-500 transition-colors disabled:opacity-50"
+            >
+              Undo last set
+            </button>
+          )}
+          <button
+            onClick={onNext}
+            className="text-neutral-400 text-sm hover:text-neutral-50 transition-colors"
+          >
+            Next exercise →
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

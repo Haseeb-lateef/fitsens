@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getDayPlan } from "../api/plan";
 import { getExercises } from "../api/exercises";
-import { createWorkoutSet, getLastSession } from "../api/workoutSets";
+import { createWorkoutSet, deleteWorkoutSet, getLastSession } from "../api/workoutSets";
 import type { PlannedExerciseOut, DayOfWeek } from "../types/plan";
 import type { ExerciseOut } from "../types/exercise";
 import type { LastSessionSet, WorkoutSetOut } from "../types/workoutSet";
@@ -154,6 +154,39 @@ function TodayWorkout() {
     }
   }
 
+  async function handleUndoLastSet() {
+    if (!plan) return;
+
+    const exerciseId = plan[currentIndex].exercise_id;
+    const sets = loggedSets[exerciseId];
+    if (!sets || sets.length === 0) return;
+
+    // Shares the log guard so an undo can't race a log, or fire twice itself.
+    if (loggingRef.current) return;
+    loggingRef.current = true;
+    setIsLogging(true);
+
+    try {
+      const lastSet = sets[sets.length - 1];
+      await deleteWorkoutSet(lastSet.id);
+      setLoggedSets({ ...loggedSets, [exerciseId]: sets.slice(0, -1) });
+      setWeight(String(lastSet.weight_kg));
+      setReps(String(lastSet.reps));
+    } finally {
+      loggingRef.current = false;
+      setIsLogging(false);
+    }
+  }
+
+  function handlePrevious() {
+    if (!plan || currentIndex === 0) return;
+
+    const previousIndex = currentIndex - 1;
+    // Going back undoes a skip, so the exercise stops reading as complete.
+    setDoneManually((done) => done.filter((id) => id !== plan[previousIndex].id));
+    goToExercise(previousIndex);
+  }
+
   function handleNext() {
     if (!plan) return;
 
@@ -199,9 +232,12 @@ function TodayWorkout() {
         weight={weight}
         reps={reps}
         isLogging={isLogging}
+        canGoPrevious={currentIndex > 0}
         onWeightChange={setWeight}
         onRepsChange={setReps}
         onLog={handleLog}
+        onUndoLastSet={handleUndoLastSet}
+        onPrevious={handlePrevious}
         onNext={handleNext}
       />
 
