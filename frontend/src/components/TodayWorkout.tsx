@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { getDayPlan } from "../api/plan";
 import { getExercises } from "../api/exercises";
-import { createWorkoutSet, deleteWorkoutSet, getLastSession } from "../api/workoutSets";
+import {
+  createWorkoutSet,
+  deleteWorkoutSet,
+  getLastSession,
+  getWorkoutSetsForDate,
+} from "../api/workoutSets";
 import type { PlannedExerciseOut, DayOfWeek } from "../types/plan";
 import type { ExerciseOut } from "../types/exercise";
 import type { LastSessionSet, WorkoutSetOut } from "../types/workoutSet";
 import WorkoutHero from "./WorkoutHero";
 import UpNextRow from "./UpNextRow";
+import { toLocalDateString } from "../utils/dates";
 
 const DAYS_BY_JS_INDEX: DayOfWeek[] = [
   "sunday",
@@ -34,7 +40,8 @@ function prefillFor(
     return { weight: String(last.weight_kg), reps: String(last.reps) };
   }
 
-  const historyReps = history && history.length > 0 ? String(history[0].reps) : "";
+  const historyReps =
+    history && history.length > 0 ? String(history[0].reps) : "";
 
   return {
     weight: history && history.length > 0 ? String(history[0].weight_kg) : "",
@@ -44,11 +51,16 @@ function prefillFor(
 
 function TodayWorkout() {
   const today = DAYS_BY_JS_INDEX[new Date().getDay()];
+  const todayDate = toLocalDateString();
 
   const [plan, setPlan] = useState<PlannedExerciseOut[] | null>(null);
   const [exercises, setExercises] = useState<ExerciseOut[]>([]);
-  const [lastSessions, setLastSessions] = useState<Record<number, LastSessionSet[]>>({});
-  const [loggedSets, setLoggedSets] = useState<Record<number, WorkoutSetOut[]>>({});
+  const [lastSessions, setLastSessions] = useState<
+    Record<number, LastSessionSet[]>
+  >({});
+  const [loggedSets, setLoggedSets] = useState<Record<number, WorkoutSetOut[]>>(
+    {},
+  );
   const [doneManually, setDoneManually] = useState<number[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [weight, setWeight] = useState("");
@@ -69,19 +81,42 @@ function TodayWorkout() {
         // them together. Only the last-session calls need the plan first, which
         // keeps this to two round trips instead of three — it's the difference
         // between usable and not on a phone.
-        const [planData, exData] = await Promise.all([getDayPlan(today), getExercises()]);
+        const [planData, exData] = await Promise.all([
+          getDayPlan(today),
+          getExercises(),
+        ]);
+
+        // Rehydrate today's already-logged sets so the screen survives reloads
+        // and tab switches instead of pretending the workout never happened.
+        const todaySets = await getWorkoutSetsForDate(todayDate);
 
         // An exercise deleted while still on the plan leaves a dangling entry, and
         // /last-session 404s for it. Drop those from today rather than showing a
         // phantom exercise — the plan editor still lists it so it can be removed.
         const liveIds = new Set(exData.map((exercise) => exercise.id));
-        const dayPlan = planData.filter((entry) => liveIds.has(entry.exercise_id));
+        const dayPlan = planData.filter((entry) =>
+          liveIds.has(entry.exercise_id),
+        );
+
+        const todaySetMap: Record<number, WorkoutSetOut[]> = {};
+        todaySets
+          .filter((set) =>
+            dayPlan.some((entry) => entry.exercise_id === set.exercise_id),
+          )
+          .forEach((set) => {
+            todaySetMap[set.exercise_id] = [
+              ...(todaySetMap[set.exercise_id] ?? []),
+              set,
+            ];
+          });
 
         // Per-call catch: one exercise's missing history must not take down the
         // whole screen, which is what Promise.all's all-or-nothing behaviour did.
         const sessions = await Promise.all(
           dayPlan.map((entry) =>
-            getLastSession(entry.exercise_id).catch(() => [] as LastSessionSet[]),
+            getLastSession(entry.exercise_id).catch(
+              () => [] as LastSessionSet[],
+            ),
           ),
         );
         if (!active) return;
@@ -94,18 +129,25 @@ function TodayWorkout() {
         setExercises(exData);
         setLastSessions(sessionMap);
         setPlan(dayPlan);
+        setLoggedSets(todaySetMap);
         setCurrentIndex(0);
 
         if (dayPlan.length > 0) {
           const first = dayPlan[0];
-          const prefill = prefillFor(first, undefined, sessionMap[first.exercise_id]);
+          const prefill = prefillFor(
+            first,
+            todaySetMap[first.exercise_id],
+            sessionMap[first.exercise_id],
+          );
           setWeight(prefill.weight);
           setReps(prefill.reps);
         }
       } catch (err: unknown) {
         if (!active) return;
         // Without this the screen sat on "Loading..." forever on any failure.
-        setLoadError(err instanceof Error ? err.message : "Couldn't load today's workout.");
+        setLoadError(
+          err instanceof Error ? err.message : "Couldn't load today's workout.",
+        );
       }
     })();
 
@@ -128,12 +170,19 @@ function TodayWorkout() {
     return loggedSets[exerciseId]?.length ?? 0;
   }
 
-  function isComplete(entry: PlannedExerciseOut, logged = loggedSets, done = doneManually) {
+  function isComplete(
+    entry: PlannedExerciseOut,
+    logged = loggedSets,
+    done = doneManually,
+  ) {
     const count = logged[entry.exercise_id]?.length ?? 0;
     return count >= suggestedFor(entry) || done.includes(entry.id);
   }
 
-  function nextIncompleteIndex(logged: Record<number, WorkoutSetOut[]>, done: number[]) {
+  function nextIncompleteIndex(
+    logged: Record<number, WorkoutSetOut[]>,
+    done: number[],
+  ) {
     if (!plan) return -1;
     for (let i = 1; i <= plan.length; i++) {
       const idx = (currentIndex + i) % plan.length;
@@ -147,7 +196,11 @@ function TodayWorkout() {
     setCurrentIndex(idx);
 
     const entry = plan[idx];
-    const prefill = prefillFor(entry, logged[entry.exercise_id], lastSessions[entry.exercise_id]);
+    const prefill = prefillFor(
+      entry,
+      logged[entry.exercise_id],
+      lastSessions[entry.exercise_id],
+    );
     setWeight(prefill.weight);
     setReps(prefill.reps);
   }
@@ -158,7 +211,13 @@ function TodayWorkout() {
     const exerciseId = plan[currentIndex].exercise_id;
     const weightValue = Number(weight);
     const repsValue = Number(reps);
-    if (weight === "" || reps === "" || Number.isNaN(weightValue) || Number.isNaN(repsValue)) return;
+    if (
+      weight === "" ||
+      reps === "" ||
+      Number.isNaN(weightValue) ||
+      Number.isNaN(repsValue)
+    )
+      return;
 
     if (loggingRef.current) return;
     loggingRef.current = true;
@@ -219,7 +278,9 @@ function TodayWorkout() {
 
     const previousIndex = currentIndex - 1;
     // Going back undoes a skip, so the exercise stops reading as complete.
-    setDoneManually((done) => done.filter((id) => id !== plan[previousIndex].id));
+    setDoneManually((done) =>
+      done.filter((id) => id !== plan[previousIndex].id),
+    );
     goToExercise(previousIndex);
   }
 
@@ -227,7 +288,9 @@ function TodayWorkout() {
     if (!plan) return;
 
     const entry = plan[currentIndex];
-    const nextDone = doneManually.includes(entry.id) ? doneManually : [...doneManually, entry.id];
+    const nextDone = doneManually.includes(entry.id)
+      ? doneManually
+      : [...doneManually, entry.id];
     setDoneManually(nextDone);
 
     const idx = nextIncompleteIndex(loggedSets, nextDone);
@@ -237,7 +300,9 @@ function TodayWorkout() {
   if (loadError) {
     return (
       <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 flex flex-col gap-3">
-        <p className="text-neutral-50 font-semibold">Couldn't load today's workout</p>
+        <p className="text-neutral-50 font-semibold">
+          Couldn't load today's workout
+        </p>
         <p className="text-neutral-400 text-sm">{loadError}</p>
         <button
           onClick={() => setReloadKey((key) => key + 1)}
@@ -254,7 +319,11 @@ function TodayWorkout() {
   }
 
   if (plan.length === 0) {
-    return <p className="text-neutral-400 text-sm">No exercises planned for today.</p>;
+    return (
+      <p className="text-neutral-400 text-sm">
+        No exercises planned for today.
+      </p>
+    );
   }
 
   const muscleGroups = [
@@ -293,7 +362,9 @@ function TodayWorkout() {
       />
 
       <div className="flex flex-col gap-2">
-        <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wide">Up Next</p>
+        <p className="text-neutral-400 text-xs font-semibold uppercase tracking-wide">
+          Up Next
+        </p>
         {plan.map((entry, idx) => {
           const exercise = exerciseFor(entry.exercise_id);
           return (
