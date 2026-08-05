@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Brush,
 } from "recharts";
 import {
   getBodyweightLogs,
@@ -178,6 +179,12 @@ function Progress() {
                         strokeWidth={2}
                         dot={{ fill: "#84cc16" }}
                       />
+                      <Brush
+                        dataKey="date"
+                        height={24}
+                        stroke="#84cc16"
+                        travellerWidth={8}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -237,6 +244,12 @@ function Progress() {
                         stroke="#84cc16"
                         strokeWidth={2}
                         dot={{ fill: "#84cc16" }}
+                      />
+                      <Brush
+                        dataKey="date"
+                        height={24}
+                        stroke="#84cc16"
+                        travellerWidth={8}
                       />
                     </LineChart>
                   </ResponsiveContainer>
